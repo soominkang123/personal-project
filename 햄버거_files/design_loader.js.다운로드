@@ -1,0 +1,24 @@
+const BLOCK_NAME = 'module-';
+const RESP_BREAK_POINT = 1024;
+const FLYING_BREAK_POINT = 40;
+const WINDOW_WIDTH = window.innerWidth;
+
+var today = new Date();
+var todayYmdNumber = today.getFullYear() + ('0' + (today.getMonth() + 1)).slice(-2) + ('0' + today.getDate()).slice(-2);
+var mainStage;
+
+async function createMainStage() {
+	const MainStage = await (await import('/js/DesignEditors/Skins/mainStage.js?v=' + jcv)).default();
+
+	const datas = {
+		"layoutDatas": BLOCK_LAYOUTS,
+		"blockDatas": BLOCK_CONTENTS,
+		"headerData": HEADER_CONFIG,
+		"footerData": FOOTER_CONFIG,
+	}	
+
+	mainStage = new MainStage(datas);
+	mainStage.init();	
+}
+
+createMainStage();

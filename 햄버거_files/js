@@ -1,0 +1,124 @@
+$(document).ready(function () {
+    $('form#login-form').submit(function () {
+        $.post('/members/login', $('form#login-form').serialize(), function (res) {
+            $(".__certifiedRequired").val('N');
+            if (res.result) {
+                var return_url = res.return_url ? res.return_url : '/';
+                if (res.result_msg) {
+                    alert(res.result_msg);
+                }
+                location.replace(return_url);
+            } else {
+                if (res.error === 'regit_certified') {
+
+                    if ($(".__certifiedOwnerCertTextStatusOpen").length > 0) {
+                        CERTIFIED.then((certifiedObj) => {
+                            certifiedObj.ownerCert.reDraw('regist');
+                            $('.__certifiedPopupTitle').text(window.i18n.all.login.required_owner_certified.message);
+                            $(".__certifiedOwnerCertTextStatusOpen").click();
+                        });
+                    }
+
+                    if ($(".__certifiedSmsKcpOrgBtnSend").length > 0) {
+                        CERTIFIED.then((certifiedObj) => {
+                            certifiedObj.smsKcp.reDraw('regist');
+                            alert(window.i18n.all.login.required_sms_kcp_certified.message)
+                            $(".__certifiedSmsKcpOrgBtnSend").click();
+                        });
+                    }
+                } else if (res.error === 'need_certified') {
+
+                    if ($(".__certifiedOwnerCertTextStatusOpen").length > 0) {
+                        CERTIFIED.then((certifiedObj) => {
+                            certifiedObj.ownerCert.reDraw('confirm');
+                            $('.__certifiedPopupTitle').text(window.i18n.all.fields.owner_phone_certified.message);
+                            $(".__certifiedInputPhone").val(res.datas.member_phone[0]);
+                            $("input[name='certified_member_phone']").val(res.datas.member_phone[0]);
+                            $(".__certifiedOwnerCertTextStatusOpen").click();
+                        });
+                    }
+
+                    if ($(".__certifiedSmsKcpOrgBtnSend").length > 0) {
+                        CERTIFIED.then((certifiedObj) => {
+                            certifiedObj.smsKcp.reDraw('confirm');
+                            $(".__certifiedSmsKcpOrgBtnSend").click();
+                        });
+                    }
+
+                } else {
+                    alert(res.error);
+                }
+            }
+
+            return false;
+        });
+
+        return false;
+    });
+});
+
+
+/**
+ * 로그아웃 처리
+ */
+function logout() {
+    if (confirm("로그아웃하시겠습니까?")) {
+        $.get('/members/logout').done(function (res) {
+            if (res.result === true) {
+                location.replace('/');
+            } else {
+                alert(res.error);
+            }
+        });
+    }
+}
+
+
+
+var loginSubmit = function () {
+    if ($(".__certifiedRequired").val() === 'Y') {
+        let provider = $("input[name='social_login']").val();
+        $(".sns_login_" + provider).click();
+    } else {
+        $('form#login-form').submit();
+    }
+};
+
+/**
+* 인증 관련 콜백 함수
+*/
+var certifiedCallbackFunction = {
+    "owner_cert": {
+        "after_send": function () {
+            $("input[name='member_phone']").prop('readonly', true);
+        },
+        "reset": function () {
+            $("input[name='member_phone']").prop('readonly', false);
+        },
+        "after_confirm": function (data) {
+            hideCenterLayer();
+            $("input[name='member_phone']").val(data.owner_cert.certified_target);
+            $("input[name='member_phone']").prop('readonly', true);
+            $("input[name='member_phone']").prop('disabled', false);
+            loginSubmit();//자동 저장
+        },
+    },
+    "sms_kcp": {
+        "after_receive": function (frm) {
+            hideCenterLayer();
+            let objForm = $(frm);
+
+            let userName = objForm.find('input[name="user_name"]').val();
+            let phoneNo = objForm.find('input[name="phone_no"]').val();
+
+            $("input[name='member_name']").val(userName);
+            $("input[name='member_name']").prop('readonly', true);
+            $("input[name='member_name']").prop('disabled', false);
+
+            $("input[name='member_phone']").val(phoneNo);
+            $("input[name='member_phone']").prop('readonly', true);
+            $("input[name='member_phone']").prop('disabled', false);
+            loginSubmit();//자동 저장
+        }
+    },
+};
